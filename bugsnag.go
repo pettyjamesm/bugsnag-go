@@ -123,10 +123,12 @@ func (notifier *restNotifier) SetNotifyStages(releaseStages []string) {
 
 func (notifier *restNotifier) invalidateWillNotify() {
 	result := false
-	for _, check := range notifier.notifyStages {
-		if check == notifier.releaseStage {
-			result = true
-			break
+	if notifier.apiKey != "" {
+		for _, check := range notifier.notifyStages {
+			if check == notifier.releaseStage {
+				result = true
+				break
+			}
 		}
 	}
 	if result && !notifier.willNotify {
