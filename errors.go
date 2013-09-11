@@ -45,7 +45,7 @@ func (e *bugsnagEvent) String() string {
 	}
 }
 
-func getErrorTypeName(err error) string {
+func getErrorTypeName(err interface{}) string {
 	errorType := reflect.TypeOf(err)
 	if errorType.Kind() == reflect.Ptr {
 		errorType = errorType.Elem()

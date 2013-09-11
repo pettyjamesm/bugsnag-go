@@ -24,22 +24,22 @@ type notifierInfo struct {
 	Url     string `json:"url"`
 }
 
-type BugsnagContext interface {
+type Context interface {
 	Name() string
 	SetUserId(userId string)
-	Notify(err error)
+	Notify(err interface{})
 }
 
-type BugsnagNotifier interface {
-	Notify(err error)
+type Notifier interface {
+	Notify(err interface{})
 	SetReleaseStage(releaseStage string)
 	SetNotifyStages(notifyStages []string)
 	SetUseSSL(useSSL bool)
-	NewContext(contextName string) BugsnagContext
+	NewContext(contextName string) Context
 	SetMaxStackSize(maxSize uint)
 }
 
-func NewBugsnagNotifier(apiKey string) BugsnagNotifier {
+func NewBugsnagNotifier(apiKey string) Notifier {
 	notifier := &restNotifier{
 		apiKey:       apiKey,
 		info:         defaultInfo,
@@ -73,17 +73,27 @@ func (notifier *restNotifier) String() string {
 	return fmt.Sprintf("BugsnagNotifier(%v)", *notifier)
 }
 
-func (notifier *restNotifier) Notify(err error) {
+func (notifier *restNotifier) Notify(err interface{}) {
 	notifier.notify(err, nil)
 }
 
-func (notifier *restNotifier) notify(err error, context *notifierContext) {
+func (notifier *restNotifier) notify(err interface{}, context *notifierContext) {
 	if !notifier.willNotify {
 		return
 	}
+
+	var message string
+
+	switch err.(type) {
+	case error:
+		message = err.(error).Error()
+	default:
+		message = fmt.Sprintf("%v", err)
+	}
+
 	exception := bugsnagException{
 		ErrorClass: getErrorTypeName(err),
-		Message:    err.Error(),
+		Message:    message,
 		StackTrace: getStackFrames(2, int(notifier.stackSize)),
 	}
 	event := bugsnagEvent{
@@ -132,7 +142,7 @@ func (notifier *restNotifier) SetUseSSL(useSSL bool) {
 	notifier.useSSL = useSSL
 }
 
-func (notifier *restNotifier) NewContext(contextName string) BugsnagContext {
+func (notifier *restNotifier) NewContext(contextName string) Context {
 	return &notifierContext{notifier: notifier, name: contextName}
 }
 
@@ -215,7 +225,7 @@ func (context *notifierContext) Name() string {
 	return context.name
 }
 
-func (context *notifierContext) Notify(err error) {
+func (context *notifierContext) Notify(err interface{}) {
 	context.notifier.notify(err, context)
 }
 
