@@ -5,7 +5,7 @@ import (
 )
 
 func TestReleaseStage(t *testing.T) {
-	client := NewBugsnagNotifier("")
+	client := NewNotifier("")
 	hidden := client.(*restNotifier)
 	client.SetReleaseStage("development")
 	if hidden.willNotify {

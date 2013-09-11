@@ -39,7 +39,7 @@ type Notifier interface {
 	SetMaxStackSize(maxSize uint)
 }
 
-func NewBugsnagNotifier(apiKey string) Notifier {
+func NewNotifier(apiKey string) Notifier {
 	notifier := &restNotifier{
 		apiKey:       apiKey,
 		info:         defaultInfo,
