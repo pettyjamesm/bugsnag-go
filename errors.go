@@ -64,8 +64,6 @@ func getStackFrames(skipFrames, maxFrames int) []stacktraceFrame {
 
 	written := 0
 
-	sourcePaths := getSourcePaths()
-
 	for i := 0; i < depth; i++ {
 		pc := callers[i]
 		fn := runtime.FuncForPC(pc)
@@ -74,7 +72,7 @@ func getStackFrames(skipFrames, maxFrames int) []stacktraceFrame {
 		}
 		filename, line := fn.FileLine(pc)
 
-		filename = simplifyFilePath(sourcePaths, filename)
+		filename = simplifyFilePath(filename)
 
 		output[i] = stacktraceFrame{File: filename, LineNumber: uint(line), Method: fn.Name()}
 		written++
@@ -83,22 +81,23 @@ func getStackFrames(skipFrames, maxFrames int) []stacktraceFrame {
 	return output[:written]
 }
 
-func simplifyFilePath(prefixes []string, path string) string {
-	for _, check := range prefixes {
+var sourcePaths []string
+
+func init() {
+	goroot := runtime.GOROOT() + "/src/pkg/"
+	gopath := strings.Split(os.Getenv("GOPATH"), ":")
+	sourcePaths = make([]string, len(gopath)+1)
+	sourcePaths[0] = goroot
+	for i, path := range gopath {
+		sourcePaths[i+1] = path + "/src/"
+	}
+}
+
+func simplifyFilePath(path string) string {
+	for _, check := range sourcePaths {
 		if strings.HasPrefix(path, check) && len(path) > len(check) {
 			return path[len(check):]
 		}
 	}
 	return path
-}
-
-func getSourcePaths() []string {
-	goroot := runtime.GOROOT() + "/src/pkg/"
-	gopath := strings.Split(os.Getenv("GOPATH"), ":")
-	output := make([]string, len(gopath)+1)
-	output[0] = goroot
-	for i, path := range gopath {
-		output[i+1] = path + "/src/"
-	}
-	return output
 }
