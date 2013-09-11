@@ -50,7 +50,6 @@ func NewBugsnagNotifier(apiKey string) BugsnagNotifier {
 		queue:        make(chan *bugsnagNotification, 10),
 	}
 	notifier.invalidateWillNotify()
-	go notifier.processQueue()
 	return notifier
 }
 
@@ -113,13 +112,20 @@ func (notifier *restNotifier) SetNotifyStages(releaseStages []string) {
 }
 
 func (notifier *restNotifier) invalidateWillNotify() {
+	result := false
 	for _, check := range notifier.notifyStages {
 		if check == notifier.releaseStage {
-			notifier.willNotify = true
-			return
+			result = true
+			break
 		}
 	}
-	notifier.willNotify = false
+	if result && !notifier.willNotify {
+		notifier.willNotify = result
+		go notifier.processQueue()
+	} else if !result && notifier.willNotify {
+		notifier.willNotify = result
+		notifier.queue <- nil
+	}
 }
 
 func (notifier *restNotifier) SetUseSSL(useSSL bool) {
@@ -138,7 +144,11 @@ func (notifier *restNotifier) processQueue() {
 	client := &http.Client{}
 	for {
 		notification := <-notifier.queue
-		notifier.dispatchSingle(client, notification)
+		if notifier.willNotify && notification != nil {
+			notifier.dispatchSingle(client, notification)
+		} else if !notifier.willNotify && notification == nil {
+			break
+		}
 	}
 }
 

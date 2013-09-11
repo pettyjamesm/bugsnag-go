@@ -1,9 +1,7 @@
 package bugsnag
 
 import (
-	"fmt"
 	"testing"
-	"time"
 )
 
 func TestReleaseStage(t *testing.T) {
