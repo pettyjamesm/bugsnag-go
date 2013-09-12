@@ -77,10 +77,16 @@ var sourcePaths []string
 func init() {
 	goroot := runtime.GOROOT() + "/src/pkg/"
 	gopath := strings.Split(os.Getenv("GOPATH"), ":")
-	sourcePaths = make([]string, len(gopath)+1)
+	sourcePaths = make([]string, (len(gopath)*3)+1)
 	sourcePaths[0] = goroot
-	for i, path := range gopath {
-		sourcePaths[i+1] = path + "/src/"
+	index := 1
+	for _, path := range gopath {
+		sourcePaths[index] = path + "/src/"
+		index++
+		sourcePaths[index] = path + "/pkg/"
+		index++
+		sourcePaths[index] = path
+		index++
 	}
 }
 
