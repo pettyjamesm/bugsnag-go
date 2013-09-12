@@ -41,8 +41,8 @@ type Notifier interface {
 	SetMaxStackSize(maxSize uint)
 	NotifyOnPanic(swallowPanic bool)
 	WillNotify() bool
-	SentFailureCount() uint64
-	UnsentFailureCount() uint64
+	SentNotificationCount() uint64
+	UnsentNotificationCount() uint64
 }
 
 func NewNotifier(apiKey string) Notifier {
@@ -87,11 +87,11 @@ func (notifier *restNotifier) String() string {
 	return fmt.Sprintf("BugsnagNotifier(%v)", *notifier)
 }
 
-func (notifier *restNotifier) SentFailureCount() uint64 {
+func (notifier *restNotifier) SentNotificationCount() uint64 {
 	return notifier.totalNotified
 }
 
-func (notifier *restNotifier) UnsentFailureCount() uint64 {
+func (notifier *restNotifier) UnsentNotificationCount() uint64 {
 	return notifier.totalTriggered - notifier.totalNotified
 }
 
