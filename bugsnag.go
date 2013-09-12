@@ -28,6 +28,7 @@ type Context interface {
 	Name() string
 	SetUserId(userId string)
 	Notify(err interface{})
+	NotifyOnPanic(swallowPanic bool)
 }
 
 type Notifier interface {
@@ -37,6 +38,7 @@ type Notifier interface {
 	SetUseSSL(useSSL bool)
 	NewContext(contextName string) Context
 	SetMaxStackSize(maxSize uint)
+	NotifyOnPanic(swallowPanic bool)
 }
 
 func NewNotifier(apiKey string) Notifier {
@@ -71,6 +73,15 @@ type restNotifier struct {
 
 func (notifier *restNotifier) String() string {
 	return fmt.Sprintf("BugsnagNotifier(%v)", *notifier)
+}
+
+func (notifier *restNotifier) NotifyOnPanic(swallowPanic bool) {
+	if err := recover(); err != nil {
+		notifier.notify(err, nil)
+		if !swallowPanic {
+			panic(err)
+		}
+	}
 }
 
 func (notifier *restNotifier) Notify(err interface{}) {
@@ -229,6 +240,15 @@ func (context *notifierContext) Name() string {
 
 func (context *notifierContext) Notify(err interface{}) {
 	context.notifier.notify(err, context)
+}
+
+func (context *notifierContext) NotifyOnPanic(swallowPanic bool) {
+	if err := recover(); err != nil {
+		context.notifier.notify(err, context)
+		if !swallowPanic {
+			panic(err)
+		}
+	}
 }
 
 func (context *notifierContext) SetUserId(userId string) {
