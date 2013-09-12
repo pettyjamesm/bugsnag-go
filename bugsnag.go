@@ -148,17 +148,11 @@ func (notifier *restNotifier) notify(err interface{}, context *notifierContext, 
 		Exceptions:   []bugsnagException{exception},
 	}
 
-	fileContext := exception.getFileContext()
-
 	if context != nil {
 		event.UserId = context.userId
-		if fileContext == "" {
-			event.Context = context.name
-		} else {
-			event.Context = context.name + ": " + fileContext
-		}
+		event.Context = &context.name
 	} else {
-		event.Context = fileContext
+		event.Context = nil
 	}
 	notification := &bugsnagNotification{
 		ApiKey:       notifier.apiKey,

@@ -26,7 +26,7 @@ type bugsnagEvent struct {
 	AppVersion   string             `json:"appVersion,omitempty"`
 	OsVersion    string             `json:"osVersion,omitempty"`
 	ReleaseStage string             `json:"releaseStage"`
-	Context      string             `json:"context,omitempty"`
+	Context      *string            `json:"context"`
 	GroupingHash string             `json:"groupingHash,omitempty"`
 	Exceptions   []bugsnagException `json:"exceptions"`
 }
@@ -98,11 +98,17 @@ func simplifyFilePath(path string) string {
 	if strings.HasPrefix(path, goroot) && pathLen > len(goroot) {
 		return path[len(goroot):]
 	}
-	for _, check := range sourcePaths {
+	for _, tmpPath := range sourcePaths {
+		var check string
+		if len(tmpPath) > 1 && tmpPath[0] == '/' {
+			check = tmpPath[1:]
+		} else {
+			check = tmpPath
+		}
 		if strings.HasPrefix(path, check) && pathLen > len(check) {
 			var src, pkg string
-			src = path + "/src/"
-			pkg = path + "/pkg/"
+			src = path + "src/"
+			pkg = path + "pkg/"
 			if strings.HasPrefix(path, src) && pathLen > len(src) {
 				return path[len(src):]
 			} else if strings.HasPrefix(path, pkg) && pathLen > len(pkg) {
