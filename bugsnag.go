@@ -123,7 +123,6 @@ func (notifier *restNotifier) notify(err interface{}, context *notifierContext, 
 	event := bugsnagEvent{
 		ReleaseStage: notifier.releaseStage,
 		Exceptions:   []bugsnagException{exception},
-		GroupingHash: exception.getGroupingHash(),
 	}
 	if context != nil {
 		event.UserId = context.userId

@@ -36,16 +36,6 @@ type bugsnagNotification struct {
 	Events       []bugsnagEvent `json:"events"`
 }
 
-func (e *bugsnagException) getGroupingHash() string {
-	var prefix string
-	if len(e.StackTrace) > 0 {
-		prefix = fmt.Sprintf("%s,L%d", e.StackTrace[0].File, e.StackTrace[0].LineNumber)
-	} else {
-		prefix = ""
-	}
-	return fmt.Sprintf("%s %s(%s)", prefix, e.ErrorClass, e.Message)
-}
-
 func getErrorTypeName(err interface{}) string {
 	errorType := reflect.TypeOf(err)
 	if errorType.Kind() == reflect.Ptr {
