@@ -74,23 +74,11 @@ func getStackFrames(skipFrames, maxFrames int) []stacktraceFrame {
 			continue
 		}
 
-		var trimmed string
 		filename, line := fn.FileLine(pc)
 
-		filename, trimmed = simplifyFilePath(filename)
+		filename = simplifyFilePath(filename)
 
-		var inProject bool
-		if strings.HasSuffix(trimmed, "/src/") || strings.HasSuffix(trimmed, "/pkg/") {
-			inProject = false
-		} else {
-			inProject = true
-		}
-
-		if len(filename) > 1 && filename[0] == '/' {
-			filename = filename[1:]
-		}
-
-		output[written] = stacktraceFrame{File: filename, LineNumber: uint(line), Method: fn.Name(), InProject: inProject}
+		output[written] = stacktraceFrame{File: filename, LineNumber: uint(line), Method: fn.Name(), InProject: true}
 		written++
 	}
 
@@ -105,10 +93,10 @@ func init() {
 	sourcePaths = strings.Split(os.Getenv("GOPATH"), ":")
 }
 
-func simplifyFilePath(path string) (string, string) {
+func simplifyFilePath(path string) string {
 	pathLen := len(path)
 	if strings.HasPrefix(path, goroot) && pathLen > len(goroot) {
-		return path[len(goroot):], goroot
+		return path[len(goroot):]
 	}
 	for _, check := range sourcePaths {
 		if strings.HasPrefix(path, check) && pathLen > len(check) {
@@ -116,13 +104,16 @@ func simplifyFilePath(path string) (string, string) {
 			src = path + "/src/"
 			pkg = path + "/pkg/"
 			if strings.HasPrefix(path, src) && pathLen > len(src) {
-				return path[len(src):], src
+				return path[len(src):]
 			} else if strings.HasPrefix(path, pkg) && pathLen > len(pkg) {
-				return path[len(pkg):], pkg
+				return path[len(pkg):]
 			} else {
-				return path[len(check):], check
+				return path[len(check):]
 			}
 		}
 	}
-	return path, ""
+	if pathLen > 1 && path[0] == '/' {
+		path = path[1:]
+	}
+	return path
 }
