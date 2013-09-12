@@ -91,6 +91,14 @@ func (notifier *restNotifier) Notify(err interface{}) {
 	notifier.notify(err, nil, false)
 }
 
+type errorType interface {
+	Error() string
+}
+
+type stringType interface {
+	String() string
+}
+
 func (notifier *restNotifier) notify(err interface{}, context *notifierContext, synchronous bool) {
 	if !notifier.willNotify {
 		return
@@ -99,10 +107,12 @@ func (notifier *restNotifier) notify(err interface{}, context *notifierContext, 
 	var message string
 
 	switch err.(type) {
-	case error:
-		message = err.(error).Error()
+	case errorType:
+		message = err.(errorType).Error()
+	case stringType:
+		message = err.(stringType).String()
 	default:
-		message = fmt.Sprintf("%v", err)
+		message = fmt.Sprintf("%+v", err)
 	}
 
 	exception := bugsnagException{
