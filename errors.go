@@ -72,28 +72,31 @@ func getStackFrames(skipFrames, maxFrames int) []stacktraceFrame {
 	return output[:written]
 }
 
+var goroot string
 var sourcePaths []string
 
 func init() {
-	goroot := runtime.GOROOT() + "/src/pkg/"
-	gopath := strings.Split(os.Getenv("GOPATH"), ":")
-	sourcePaths = make([]string, (len(gopath)*3)+1)
-	sourcePaths[0] = goroot
-	index := 1
-	for _, path := range gopath {
-		sourcePaths[index] = path + "/src/"
-		index++
-		sourcePaths[index] = path + "/pkg/"
-		index++
-		sourcePaths[index] = path
-		index++
-	}
+	goroot = runtime.GOROOT() + "/src/pkg/"
+	sourcePaths = strings.Split(os.Getenv("GOPATH"), ":")
 }
 
 func simplifyFilePath(path string) string {
+	pathLen := len(path)
+	if strings.HasPrefix(path, goroot) && pathLen > len(goroot) {
+		return path[len(goroot):]
+	}
 	for _, check := range sourcePaths {
-		if strings.HasPrefix(path, check) && len(path) > len(check) {
-			return path[len(check):]
+		if strings.HasPrefix(path, check) && pathLen > len(check) {
+			var src, pkg string
+			src = path + "/src/"
+			pkg = path + "/pkg/"
+			if strings.HasPrefix(path, src) && pathLen > len(src) {
+				return path[len(src):]
+			} else if strings.HasPrefix(path, pkg) && pathLen > len(pkg) {
+				return path[len(pkg):]
+			} else {
+				return path[len(check):]
+			}
 		}
 	}
 	return path
