@@ -150,9 +150,7 @@ func (notifier *restNotifier) notify(err interface{}, context *notifierContext, 
 
 	if context != nil {
 		event.UserId = context.userId
-		event.Context = &context.name
-	} else {
-		event.Context = nil
+		event.Context = context.name
 	}
 	notification := &bugsnagNotification{
 		ApiKey:       notifier.apiKey,

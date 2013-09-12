@@ -26,7 +26,7 @@ type bugsnagEvent struct {
 	AppVersion   string             `json:"appVersion,omitempty"`
 	OsVersion    string             `json:"osVersion,omitempty"`
 	ReleaseStage string             `json:"releaseStage"`
-	Context      *string            `json:"context"`
+	Context      string             `json:"context,omitempty"`
 	GroupingHash string             `json:"groupingHash,omitempty"`
 	Exceptions   []bugsnagException `json:"exceptions"`
 }
