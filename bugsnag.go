@@ -40,18 +40,22 @@ type Notifier interface {
 	NewContext(contextName string) Context
 	SetMaxStackSize(maxSize uint)
 	NotifyOnPanic(swallowPanic bool)
+	SentFailureCount() uint64
+	UnsentFailureCount() uint64
 }
 
 func NewNotifier(apiKey string) Notifier {
 	notifier := &restNotifier{
-		apiKey:       apiKey,
-		info:         defaultInfo,
-		releaseStage: "production",
-		notifyStages: []string{"production"},
-		useSSL:       false,
-		stackSize:    50,
-		httpClient:   &http.Client{},
-		queue:        make(chan *bugsnagNotification, 10),
+		apiKey:         apiKey,
+		info:           defaultInfo,
+		releaseStage:   "production",
+		notifyStages:   []string{"production"},
+		useSSL:         false,
+		stackSize:      50,
+		httpClient:     &http.Client{},
+		queue:          make(chan *bugsnagNotification, 10),
+		totalTriggered: uint64(0),
+		totalNotified:  uint64(0),
 	}
 	notifier.invalidateWillNotify()
 	return notifier
@@ -73,10 +77,21 @@ type restNotifier struct {
 	httpClient *http.Client
 	//	Send queue
 	queue chan *bugsnagNotification
+	//	Counters for Sent / Success
+	totalTriggered uint64
+	totalNotified  uint64
 }
 
 func (notifier *restNotifier) String() string {
 	return fmt.Sprintf("BugsnagNotifier(%v)", *notifier)
+}
+
+func (notifier *restNotifier) SentFailureCount() uint64 {
+	return notifier.totalNotified
+}
+
+func (notifier *restNotifier) UnsentFailureCount() uint64 {
+	return notifier.totalTriggered - notifier.totalNotified
 }
 
 func (notifier *restNotifier) NotifyOnPanic(swallowPanic bool) {
@@ -101,6 +116,7 @@ type stringType interface {
 }
 
 func (notifier *restNotifier) notify(err interface{}, context *notifierContext, synchronous bool) {
+	notifier.totalTriggered++
 	if !notifier.willNotify {
 		return
 	}
@@ -225,6 +241,7 @@ func (notifier *restNotifier) dispatchSingle(notification *bugsnagNotification) 
 	switch response.StatusCode {
 	case 200:
 		//	Successful dispatch, yay
+		notifier.totalNotified++
 		return
 	case 400:
 		//	Something wrong with our JSON formatting
