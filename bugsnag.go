@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 )
 
 const (
@@ -235,6 +236,7 @@ func (notifier *restNotifier) dispatchSingle(notification *bugsnagNotification) 
 		panic(fmt.Errorf("Bugsnag Rejected Notification due to Size (Payload: %d bytes)", len(serialized)))
 	case 429:
 		log.Printf("Bugsnag Rate-Limit Exceeded")
+		time.Sleep(time.Millisecond * 10)
 	default:
 		body, err := ioutil.ReadAll(response.Body)
 		if err != nil {
