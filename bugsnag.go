@@ -204,11 +204,20 @@ func (notifier *restNotifier) SetMaxStackSize(maxSize uint) {
 }
 
 func (notifier *restNotifier) processQueue() {
-	for {
+	for notifier.willNotify {
 		notification := <-notifier.queue
 		if notifier.willNotify && notification != nil {
 			notifier.dispatchSingle(notification)
-		} else if !notifier.willNotify && notification == nil {
+		} else {
+			break
+		}
+	}
+	//	Drain the channel if not notifying
+	for !notifier.willNotify {
+		select {
+		case _ = <-notifier.queue:
+			continue
+		default:
 			break
 		}
 	}
