@@ -146,9 +146,16 @@ func (notifier *restNotifier) notify(err interface{}, context *notifierContext, 
 		ReleaseStage: notifier.releaseStage,
 		Exceptions:   []bugsnagException{exception},
 	}
+	fileContext := exception.getFileContext()
 	if context != nil {
 		event.UserId = context.userId
-		event.Context = context.name
+		if fileContext == "" {
+			event.Context = context.name
+		} else {
+			event.Context = context.name + ": " + fileContext
+		}
+	} else {
+		event.Context = fileContext
 	}
 	notification := &bugsnagNotification{
 		ApiKey:       notifier.apiKey,

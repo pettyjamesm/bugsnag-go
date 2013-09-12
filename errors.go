@@ -36,6 +36,15 @@ type bugsnagNotification struct {
 	Events       []bugsnagEvent `json:"events"`
 }
 
+func (e *bugsnagException) getFileContext() string {
+	if len(e.StackTrace) > 0 {
+		trace := &e.StackTrace[0]
+		return fmt.Sprintf("%s#%s,L%d", trace.File, trace.Method, trace.LineNumber)
+	} else {
+		return ""
+	}
+}
+
 func getErrorTypeName(err interface{}) string {
 	errorType := reflect.TypeOf(err)
 	if errorType.Kind() == reflect.Ptr {
