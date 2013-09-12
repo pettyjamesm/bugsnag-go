@@ -40,6 +40,7 @@ type Notifier interface {
 	NewContext(contextName string) Context
 	SetMaxStackSize(maxSize uint)
 	NotifyOnPanic(swallowPanic bool)
+	WillNotify() bool
 	SentFailureCount() uint64
 	UnsentFailureCount() uint64
 }
@@ -92,6 +93,10 @@ func (notifier *restNotifier) SentFailureCount() uint64 {
 
 func (notifier *restNotifier) UnsentFailureCount() uint64 {
 	return notifier.totalTriggered - notifier.totalNotified
+}
+
+func (notifier *restNotifier) WillNotify() bool {
+	return notifier.willNotify
 }
 
 func (notifier *restNotifier) NotifyOnPanic(swallowPanic bool) {
