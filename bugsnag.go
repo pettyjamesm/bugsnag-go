@@ -208,8 +208,6 @@ func (notifier *restNotifier) processQueue() {
 		notification := <-notifier.queue
 		if notifier.willNotify && notification != nil {
 			notifier.dispatchSingle(notification)
-		} else {
-			break
 		}
 	}
 	//	Drain the channel if not notifying
