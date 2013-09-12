@@ -1,7 +1,6 @@
 package bugsnag
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
@@ -37,12 +36,14 @@ type bugsnagNotification struct {
 	Events       []bugsnagEvent `json:"events"`
 }
 
-func (e *bugsnagEvent) String() string {
-	if bytes, error := json.Marshal(e); error != nil {
-		panic(error)
+func (e *bugsnagException) getGroupingHash() string {
+	var prefix string
+	if len(e.StackTrace) > 0 {
+		prefix = fmt.Sprintf("%s,L%d", e.StackTrace[0].File, e.StackTrace[0].LineNumber)
 	} else {
-		return string(bytes)
+		prefix = ""
 	}
+	return fmt.Sprintf("%s %s(%s)", prefix, e.ErrorClass, e.Message)
 }
 
 func getErrorTypeName(err interface{}) string {

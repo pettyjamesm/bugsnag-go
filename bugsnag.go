@@ -49,6 +49,7 @@ func NewNotifier(apiKey string) Notifier {
 		notifyStages: []string{"production"},
 		useSSL:       false,
 		stackSize:    50,
+		httpClient:   &http.Client{},
 		queue:        make(chan *bugsnagNotification, 10),
 	}
 	notifier.invalidateWillNotify()
@@ -67,6 +68,8 @@ type restNotifier struct {
 	useSSL bool
 	//	Maximum stack trace size
 	stackSize uint
+	//	Http Client
+	httpClient *http.Client
 	//	Send queue
 	queue chan *bugsnagNotification
 }
@@ -77,7 +80,7 @@ func (notifier *restNotifier) String() string {
 
 func (notifier *restNotifier) NotifyOnPanic(swallowPanic bool) {
 	if err := recover(); err != nil {
-		notifier.notify(err, nil)
+		notifier.notify(err, nil, !swallowPanic)
 		if !swallowPanic {
 			panic(err)
 		}
@@ -85,10 +88,10 @@ func (notifier *restNotifier) NotifyOnPanic(swallowPanic bool) {
 }
 
 func (notifier *restNotifier) Notify(err interface{}) {
-	notifier.notify(err, nil)
+	notifier.notify(err, nil, false)
 }
 
-func (notifier *restNotifier) notify(err interface{}, context *notifierContext) {
+func (notifier *restNotifier) notify(err interface{}, context *notifierContext, synchronous bool) {
 	if !notifier.willNotify {
 		return
 	}
@@ -110,15 +113,21 @@ func (notifier *restNotifier) notify(err interface{}, context *notifierContext) 
 	event := bugsnagEvent{
 		ReleaseStage: notifier.releaseStage,
 		Exceptions:   []bugsnagException{exception},
+		GroupingHash: exception.getGroupingHash(),
 	}
 	if context != nil {
 		event.UserId = context.userId
 		event.Context = context.name
 	}
-	notifier.queue <- &bugsnagNotification{
+	notification := &bugsnagNotification{
 		ApiKey:       notifier.apiKey,
 		NotifierInfo: notifier.info,
 		Events:       []bugsnagEvent{event},
+	}
+	if synchronous {
+		notifier.dispatchSingle(notification)
+	} else {
+		notifier.queue <- notification
 	}
 }
 
@@ -164,18 +173,17 @@ func (notifier *restNotifier) SetMaxStackSize(maxSize uint) {
 }
 
 func (notifier *restNotifier) processQueue() {
-	client := &http.Client{}
 	for {
 		notification := <-notifier.queue
 		if notifier.willNotify && notification != nil {
-			notifier.dispatchSingle(client, notification)
+			notifier.dispatchSingle(notification)
 		} else if !notifier.willNotify && notification == nil {
 			break
 		}
 	}
 }
 
-func (notifier *restNotifier) dispatchSingle(client *http.Client, notification *bugsnagNotification) {
+func (notifier *restNotifier) dispatchSingle(notification *bugsnagNotification) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Panicf("Failed to send bugsnag notification!\n\t%s\n", err)
@@ -198,7 +206,7 @@ func (notifier *restNotifier) dispatchSingle(client *http.Client, notification *
 		panic(err)
 	}
 
-	response, err = client.Post(url, "application/json", bytes.NewReader(serialized))
+	response, err = notifier.httpClient.Post(url, "application/json", bytes.NewReader(serialized))
 	if err != nil {
 		panic(err)
 	}
@@ -239,12 +247,12 @@ func (context *notifierContext) Name() string {
 }
 
 func (context *notifierContext) Notify(err interface{}) {
-	context.notifier.notify(err, context)
+	context.notifier.notify(err, context, false)
 }
 
 func (context *notifierContext) NotifyOnPanic(swallowPanic bool) {
 	if err := recover(); err != nil {
-		context.notifier.notify(err, context)
+		context.notifier.notify(err, context, !swallowPanic)
 		if !swallowPanic {
 			panic(err)
 		}
