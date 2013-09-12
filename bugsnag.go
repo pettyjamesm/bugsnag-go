@@ -142,11 +142,14 @@ func (notifier *restNotifier) notify(err interface{}, context *notifierContext, 
 		Message:    message,
 		StackTrace: getStackFrames(2, int(notifier.stackSize)),
 	}
+
 	event := bugsnagEvent{
 		ReleaseStage: notifier.releaseStage,
 		Exceptions:   []bugsnagException{exception},
 	}
+
 	fileContext := exception.getFileContext()
+
 	if context != nil {
 		event.UserId = context.userId
 		if fileContext == "" {

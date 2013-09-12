@@ -12,6 +12,7 @@ type stacktraceFrame struct {
 	File       string `json:"file"`
 	LineNumber uint   `json:"lineNumber"`
 	Method     string `json:"method"`
+	InProject  bool   `json:"inProject,omitempty"`
 }
 
 type bugsnagException struct {
@@ -69,12 +70,27 @@ func getStackFrames(skipFrames, maxFrames int) []stacktraceFrame {
 		fn := runtime.FuncForPC(pc)
 		if fn == nil {
 			break
+		} else if fn.Name() == "runtime.panic" {
+			continue
 		}
+
+		var trimmed string
 		filename, line := fn.FileLine(pc)
 
-		filename = simplifyFilePath(filename)
+		filename, trimmed = simplifyFilePath(filename)
 
-		output[i] = stacktraceFrame{File: filename, LineNumber: uint(line), Method: fn.Name()}
+		var inProject bool
+		if strings.HasSuffix(trimmed, "/src/") || strings.HasSuffix(trimmed, "/pkg/") {
+			inProject = false
+		} else {
+			inProject = true
+		}
+
+		if len(filename) > 1 && filename[0] == '/' {
+			filename = filename[1:]
+		}
+
+		output[written] = stacktraceFrame{File: filename, LineNumber: uint(line), Method: fn.Name(), InProject: inProject}
 		written++
 	}
 
@@ -89,10 +105,10 @@ func init() {
 	sourcePaths = strings.Split(os.Getenv("GOPATH"), ":")
 }
 
-func simplifyFilePath(path string) string {
+func simplifyFilePath(path string) (string, string) {
 	pathLen := len(path)
 	if strings.HasPrefix(path, goroot) && pathLen > len(goroot) {
-		return path[len(goroot):]
+		return path[len(goroot):], goroot
 	}
 	for _, check := range sourcePaths {
 		if strings.HasPrefix(path, check) && pathLen > len(check) {
@@ -100,13 +116,13 @@ func simplifyFilePath(path string) string {
 			src = path + "/src/"
 			pkg = path + "/pkg/"
 			if strings.HasPrefix(path, src) && pathLen > len(src) {
-				return path[len(src):]
+				return path[len(src):], src
 			} else if strings.HasPrefix(path, pkg) && pathLen > len(pkg) {
-				return path[len(pkg):]
+				return path[len(pkg):], pkg
 			} else {
-				return path[len(check):]
+				return path[len(check):], check
 			}
 		}
 	}
-	return path
+	return path, ""
 }
