@@ -12,7 +12,6 @@ type stacktraceFrame struct {
 	File       string `json:"file"`
 	LineNumber uint   `json:"lineNumber"`
 	Method     string `json:"method"`
-	InProject  bool   `json:"inProject,omitempty"`
 }
 
 type bugsnagException struct {
@@ -35,15 +34,6 @@ type bugsnagNotification struct {
 	ApiKey       string         `json:"apiKey"`
 	NotifierInfo *notifierInfo  `json:"notifier"`
 	Events       []bugsnagEvent `json:"events"`
-}
-
-func (e *bugsnagException) getFileContext() string {
-	if len(e.StackTrace) > 0 {
-		trace := &e.StackTrace[0]
-		return fmt.Sprintf("%s#%s,L%d", trace.File, trace.Method, trace.LineNumber)
-	} else {
-		return ""
-	}
 }
 
 func getErrorTypeName(err interface{}) string {
@@ -78,7 +68,7 @@ func getStackFrames(skipFrames, maxFrames int) []stacktraceFrame {
 
 		filename = simplifyFilePath(filename)
 
-		output[written] = stacktraceFrame{File: filename, LineNumber: uint(line), Method: fn.Name(), InProject: true}
+		output[written] = stacktraceFrame{File: filename, LineNumber: uint(line), Method: fn.Name()}
 		written++
 	}
 
