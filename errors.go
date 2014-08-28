@@ -79,7 +79,7 @@ var goroot string
 var sourcePaths []string
 
 func init() {
-	goroot = runtime.GOROOT() + "/src/pkg/"
+	goroot = runtime.GOROOT() + os.PathSeparator + "src" + os.PathSeparator + "pkg" + os.PathSeparator
 	sourcePaths = strings.Split(os.Getenv("GOPATH"), ":")
 }
 
@@ -90,15 +90,15 @@ func simplifyFilePath(path string) string {
 	}
 	for _, tmpPath := range sourcePaths {
 		var check string
-		if len(tmpPath) > 1 && tmpPath[0] == '/' {
+		if len(tmpPath) > 1 && os.IsPathSeparator(tmpPath[0]) {
 			check = tmpPath[1:]
 		} else {
 			check = tmpPath
 		}
 		if strings.HasPrefix(path, check) && pathLen > len(check) {
 			var src, pkg string
-			src = path + "src/"
-			pkg = path + "pkg/"
+			src = path + "src" + os.PathSeparator
+			pkg = path + "pkg" + os.PathSeparator
 			if strings.HasPrefix(path, src) && pathLen > len(src) {
 				return path[len(src):]
 			} else if strings.HasPrefix(path, pkg) && pathLen > len(pkg) {
@@ -108,7 +108,7 @@ func simplifyFilePath(path string) string {
 			}
 		}
 	}
-	if pathLen > 1 && path[0] == '/' {
+	if pathLen > 1 && os.IsPathSeparator(path[0]) {
 		path = path[1:]
 	}
 	return path
