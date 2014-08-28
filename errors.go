@@ -3,6 +3,7 @@ package bugsnag
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
@@ -79,7 +80,7 @@ var goroot string
 var sourcePaths []string
 
 func init() {
-	goroot = runtime.GOROOT() + os.PathSeparator + "src" + os.PathSeparator + "pkg" + os.PathSeparator
+	goroot = filepath.Join(runtime.GOROOT(), "src", "pkg") + string(os.PathSeparator)
 	sourcePaths = strings.Split(os.Getenv("GOPATH"), ":")
 }
 
@@ -97,8 +98,8 @@ func simplifyFilePath(path string) string {
 		}
 		if strings.HasPrefix(path, check) && pathLen > len(check) {
 			var src, pkg string
-			src = path + "src" + os.PathSeparator
-			pkg = path + "pkg" + os.PathSeparator
+			src = path + "src" + string(os.PathSeparator)
+			pkg = path + "pkg" + string(os.PathSeparator)
 			if strings.HasPrefix(path, src) && pathLen > len(src) {
 				return path[len(src):]
 			} else if strings.HasPrefix(path, pkg) && pathLen > len(pkg) {
